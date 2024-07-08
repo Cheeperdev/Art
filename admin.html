@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Art Portfolio - Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+        }
+        .new-post {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .new-post input, .new-post textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 10px 0;
+            border: 1px solid #ccc;
+        }
+        .new-post button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+        .new-post button:hover {
+            background-color: #218838;
+        }
+        .view-posts {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .view-posts a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 18px;
+        }
+        .view-posts a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Admin - Create New Art Post</h1>
+    </header>
+    <div class="container">
+        <div class="new-post">
+            <h2>Create a New Art Post</h2>
+            <input type="text" id="post-title" placeholder="Title">
+            <input type="file" id="post-image" accept="image/*">
+            <textarea id="post-content" rows="10" placeholder="Describe your art..."></textarea>
+            <button onclick="addPost()">Publish</button>
+        </div>
+        <div class="view-posts">
+            <a href="index.html">View Art Posts</a>
+        </div>
+    </div>
+    <script>
+        async function addPost() {
+            const title = document.getElementById('post-title').value;
+            const content = document.getElementById('post-content').value;
+            const imageFile = document.getElementById('post-image').files[0];
+
+            if (title && content && imageFile) {
+                const imageUrl = await uploadImage(imageFile);
+                const response = await fetch('https://raw.githubusercontent.com/Cheeperdev/Art/main/posts.json');
+                const posts = await response.json();
+                posts.push({ title, content, image: imageUrl });
+
+                const token = 'YOUR_GITHUB_PERSONAL_ACCESS_TOKEN';
+                const sha = await getSha();
+
+                await fetch('https://api.github.com/repos/Cheeperdev/Art/contents/posts.json', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `token ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Add new post',
+                        content: btoa(JSON.stringify(posts)),
+                        sha: sha
+                    })
+                });
+
+                document.getElementById('post-title').value = '';
+                document.getElementById('post-content').value = '';
+                document.getElementById('post-image').value = '';
+            } else {
+                alert('Please fill out the title, content, and select an image.');
+            }
+        }
+
+        async function uploadImage(imageFile) {
+            const reader = new FileReader();
+            reader.readAsDataURL(imageFile);
+            return new Promise((resolve, reject) => {
+                reader.onload = () => {
+                    const base64Image = reader.result.split(',')[1];
+                    const token = 'YOUR_GITHUB_PERSONAL_ACCESS_TOKEN';
+                    const filename = `images/${Date.now()}_${imageFile.name}`;
+
+                    fetch(`https://api.github.com/repos/Cheeperdev/Art/contents/${filename}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `token ${token}`
+                        },
+                        body: JSON.stringify({
+                            message: 'Upload image',
+                            content: base64Image
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => resolve(data.content.download_url))
+                    .catch(error => reject(error));
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function getSha() {
+            const response = await fetch('https://api.github.com/repos/Cheeperdev/Art/contents/posts.json');
+            const data = await response.json();
+            return data.sha;
+        }
+    </script>
+</body>
+</html>
