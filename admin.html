@@ -85,7 +85,7 @@
                 const posts = await response.json();
                 posts.push({ title, content, image: imageUrl });
 
-                const token = 'YOUR_GITHUB_PERSONAL_ACCESS_TOKEN';
+                const token = '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';
                 const sha = await getSha();
 
                 await fetch('https://api.github.com/repos/Cheeperdev/Art/contents/posts.json', {
@@ -115,7 +115,7 @@
             return new Promise((resolve, reject) => {
                 reader.onload = () => {
                     const base64Image = reader.result.split(',')[1];
-                    const token = 'YOUR_GITHUB_PERSONAL_ACCESS_TOKEN';
+                    const token = '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';
                     const filename = `images/${Date.now()}_${imageFile.name}`;
 
                     fetch(`https://api.github.com/repos/Cheeperdev/Art/contents/${filename}`, {
